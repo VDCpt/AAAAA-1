@@ -205,7 +205,10 @@ window.UNIFED_MerkleEngine = (function() {
                 timestamp: treeData.timestamp,
                 algorithm: 'SHA-256',
                 protocol: 'Merkle Tree (RFC 3161 compatible)',
-                eidas2Compliant: true,
+                // F9.3-VECTOR6: eidas2Compliant lido dinamicamente — mesma lógica de
+                // unifed_triada_export.js. Resolve para 'false' até validação ANS/CNCS
+                // (window.UNIFED_TSA_CONFIG indisponível no sistema vivo per D13).
+                eidas2Compliant: !!(window.UNIFED_TSA_CONFIG && window.UNIFED_TSA_CONFIG.eidas2Compliant === true),
                 selectiveDisclosure: {
                     enabled: true,
                     leafCount: treeData.leafCount,

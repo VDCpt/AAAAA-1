@@ -2723,7 +2723,7 @@ const ValueSource = {
 // ============================================================================
 const translations = {
     pt: {
-        startBtn: "INICIAR CONSULTORIA TÉCNICA v1.0-COMMERCIAL-LITIGATION",
+        startBtn: "INICIAR METODOLOGIA DE ANÁLISE",
         splashLogsBtn: "REGISTO DE ATIVIDADES (LOG)",
         navDemo: "CASO REAL (ANONIMIZADO)",
         langBtn: "US",
@@ -2783,7 +2783,7 @@ const translations = {
         dac7Q2: "2.º Trimestre",
         dac7Q3: "3.º Trimestre",
         dac7Q4: "4.º Trimestre",
-        quantumTitle: "CÁLCULO TRIBUTÁRIO TÉCNICO-JURÍDICA · PROVA RAINHA",
+        quantumTitle: "CÁLCULO TRIBUTÁRIO FORENSE · PROVA RAINHA",
         quantumFormula: "Diferencial de Base em Análise vs Faturada",
         quantumNote: "IVA 23% em falta: — | IVA 6% em falta: —",  // RETIFICAÇÃO 2B: placeholder residual suprimido — valores dinâmicos injectados em updateQuantumCard()
         quantumNoteIVA23: "IVA 23% em falta:",
@@ -2854,7 +2854,7 @@ const translations = {
         pureAuxSub: "Valores retidos pela plataforma mas não sujeitos a comissão (Zona Cinzenta) — Art. 36.º n.º 11 CIVA"
     },
     en: {
-        startBtn: "START FORENSIC EXAM v1.0-COMMERCIAL-LITIGATION",
+        startBtn: "START ANALYSIS METHODOLOGY",
         splashLogsBtn: "ACTIVITY LOG (GDPR Art. 30)",
         navDemo: "REAL CASE (ANONYMIZED)",
         langBtn: "PT",
@@ -2914,7 +2914,7 @@ const translations = {
         dac7Q2: "2nd Quarter",
         dac7Q3: "3rd Quarter",
         dac7Q4: "4th Quarter",
-        quantumTitle: "TAX CALCULATION · SMOKING GUN",
+        quantumTitle: "FORENSIC TAX CALCULATION · SMOKING GUN",
         quantumFormula: "Base Differential Under Analysis vs Invoiced",
         quantumNote: "Missing VAT 23%: — | Missing VAT 6%: —",  // RETIFICAÇÃO 2B: static placeholder suppressed — dynamic values injected in updateQuantumCard()
         quantumNoteIVA23: "Missing VAT 23%:",
@@ -9775,7 +9775,14 @@ window.formatForensicCurrency = function(value, lang = null) {
     lang = lang || window.currentLang || 'pt';
 
     if (typeof value !== 'number' || isNaN(value)) {
+        // FASE9-ITEM2: log de auditoria forense adicional (trigger explícito
+        // para rastreabilidade em UNIFED_FORENSIC_SYSTEM/ForensicLogger), mantido
+        // EM CONJUNTO com o aviso já existente (não substituído). O fallback
+        // visual '0,00 €' e a deteção de tipo (typeof!=='number'||isNaN) são
+        // preservados sem alteração — cobre undefined, null, NaN, strings e
+        // objetos (mais abrangente que uma verificação === undefined/null/isNaN).
         console.warn('[CURRENCY-FORMAT] ⚠️  Valor inválido:', value);
+        console.error('[ERR-DATA-MISSING] Variável ausente no motor de cálculo.');
         return '0,00 €';
     }
 

@@ -59,6 +59,18 @@
 (function () {
     'use strict';
 
+    // ── F9.3-VECTOR5-VERSION-DRIFT ──────────────────────────────────────────
+    // Leitura dinâmica da versão corrente do sistema (window.UNIFED_VERSION.full),
+    // eliminando o drift entre os documentos exportados (que citavam literais
+    // estáticos 'v1.0-COMMERCIAL-LITIGATION' ou '-P3.1', desatualizados desde
+    // P3.2) e o estado real do sistema. Fallback preservado apenas para o caso
+    // defensivo de version.js não ter carregado (mesmo padrão já usado em
+    // script.js:153/8374/8912).
+    function _unifedLiveVersion() {
+        return (window.UNIFED_VERSION && window.UNIFED_VERSION.full) || 'v1.0-COMMERCIAL-LITIGATION';
+    }
+    // ── FIM F9.3-VECTOR5 ──────────────────────────────────────────────────────
+
     // ============================================================================
     // RETIFICAÇÃO v1.0-R13: GARANTIR QUE UNIFEDSystem É EXTENSÍVEL
     // ============================================================================
@@ -674,13 +686,31 @@
         // ── PATCH macro_v13 — Lacuna A (getSystemMetrics) ────────────────────
         // ANTERIOR (CORROMPIDO): utilizava discrepância SAF-T vs DAC7 (472,81 €)
         // como base, ignorava o multiplicador de 12 meses e não extraía média mensal.
-        // CORRIGIDO: base = omissão de custos (BTOR – BTF); extrai média mensal
+        // CORRIGIDO (v1): base = omissão de custos (BTOR – BTF); extrai média mensal
         // antes de aplicar o multiplicador de mercado (38.000) e a projeção (12×7).
+        //
+        // ── F8.1-D14-FONTE-UNICA (esta retificação) ───────────────────────────
+        // PROBLEMA CRÍTICO: o cálculo acima ('v1') era NAIVE — multiplicação
+        // escalar direta, SEM o motor estatístico Z-Score IC99% (calcularDanoConservador
+        // Modo B) usado em script.js::performForensicCrossings(). Resultado:
+        // este valor (m.impactoSeteAnosMercado, usado na linha ~983 do PDF Analista)
+        // DIVERGIA do valor mostrado no Dashboard (cross.impactoSeteAnosMercado)
+        // por um factor de ~7x (ex.: 1.704.998.820€ "naive" vs 238.693.135€ "Z-Score"
+        // com o dataset DEMO actual) — discrepância fatal para credibilidade em juízo.
+        // CORREÇÃO: prioriza analysis.crossings.impactoSeteAnosMercado (fonte única,
+        // já calculada e persistida por performForensicCrossings() em script.js).
+        // O cálculo naive é mantido APENAS como fallback defensivo para o caso
+        // (raro) de o pipeline de análise ainda não ter executado antes da
+        // exportação — mesmo padrão de fallback usado em script.js (R24-MACRO).
+        // ────────────────────────────────────────────────────────────────────────
         const mesesComDados = sys.dataMonths ? sys.dataMonths.length : 4;
         const baseOmissaoCustos = ((analysis.totals && analysis.totals.despesas) || analysis.btorLedger || 0)
             - ((analysis.totals && analysis.totals.faturaPlataforma) || analysis.btfInvoice || 0);
         const mediaMensalBase = mesesComDados > 0 ? (baseOmissaoCustos / mesesComDados) : 0;
-        const impactoSeteAnosMercado = mediaMensalBase * 38000 * 12 * 7;
+        const _crossSeteAnos = (analysis.crossings && analysis.crossings.impactoSeteAnosMercado) || 0;
+        const impactoSeteAnosMercado = _crossSeteAnos > 0
+            ? _crossSeteAnos
+            : (mediaMensalBase * 38000 * 12 * 7); // fallback defensivo (pipeline ainda não executou)
 
         let custodyLogs = analysis.custodyLog || [];
         if (window.ForensicLogger && typeof window.ForensicLogger.getLogs === 'function') {
@@ -1221,7 +1251,7 @@
 
         const maximalPayload = {
             metadata: {
-                source: 'UNIFED-PROBATUM v1.0-COMMERCIAL-LITIGATION',
+                source: 'UNIFED-PROBATUM ' + _unifedLiveVersion(),
                 timestamp: new Date().toISOString(),
                 timestampUnix: Math.floor(Date.now() / 1000),
                 session: metrics.session,
@@ -1626,9 +1656,26 @@
         const ircEstimado               = impactoAnualOmissaoCustos * 0.21;
 
         // PROJEÇÃO MACROECONÓMICA (MERCADO)
-        const impactoMensal38k = mediaMensalOmissao * 38000;
-        const impactoAnual38k  = impactoMensal38k * 12;
-        const impacto7Anos     = impactoAnual38k  * 7;
+        // ── F8.1-D14-FONTE-UNICA (esta retificação) ───────────────────────────
+        // PROBLEMA CRÍTICO: impactoMensal38k/impactoAnual38k/impacto7Anos eram
+        // recalculados NAIVAMENTE aqui (mediaMensalOmissao×38000×12×7, sem
+        // Z-Score/IC99%), DIVERGINDO do valor mostrado no Dashboard por um
+        // factor de ~7x (1.704.998.820€ "naive" vs 238.693.135€ "Z-Score" com
+        // o dataset DEMO actual). Esta secção alimenta directamente o "IMPACTO
+        // SISTÉMICO ESTIMADO (7 Anos)" do Parecer Técnico Forense — o documento
+        // de maior relevância jurídica do sistema.
+        // CORREÇÃO: lê m.crossings.impactoMensalMercado/Anual/SeteAnos — fonte
+        // única já calculada por script.js::performForensicCrossings() (Z-Score
+        // IC99%) e propagada a 'm' via getSystemMetrics() (já corrigido acima).
+        // Fallback naive preservado apenas para o caso defensivo de m.crossings
+        // estar vazio (pipeline não executado antes da exportação).
+        // ─────────────────────────────────────────────────────────────────────
+        const _crossM = (m.crossings && m.crossings.impactoMensalMercado)   || 0;
+        const _crossA = (m.crossings && m.crossings.impactoAnualMercado)    || 0;
+        const _cross7 = (m.crossings && m.crossings.impactoSeteAnosMercado) || 0;
+        const impactoMensal38k = _crossM > 0 ? _crossM : (mediaMensalOmissao * 38000);
+        const impactoAnual38k  = _crossA > 0 ? _crossA : (impactoMensal38k * 12);
+        const impacto7Anos     = _cross7 > 0 ? _cross7 : (impactoAnual38k  * 7);
         // ─────────────────────────────────────────────────────────────────────
 
         // Datas e timestamps
@@ -2103,7 +2150,7 @@ ADMISSIBILIDADE DA PROVA DIGITAL:
 
                 // ========== 15. CERTIFICAÇÃO DIGITAL ==========
                 { text: "7. CERTIFICAÇÃO DIGITAL", style: 'h2' },
-                { text: "Sistema de peritagem forense estruturado em conformidade com as normas, com selo de integridade digital SHA-256. Todos os relatórios são temporalmente selados e auditáveis.\n\nAlgoritmo Hash: SHA-256 (Forense)\nTimestamp: RFC 3161\nValidade Prova: Indeterminada\nCertificação: UNIFIED - PROBATUM v1.0-COMMERCIAL-LITIGATION · DORA COMPLIANT\n\nEste relatório cumpre com o Regulamento (UE) 2022/2554 (DORA) - Digital Operational Resilience Act, assegurando a resiliência operacional digital e a integridade das evidências digitais processadas.", style: 'normal', margin: [0, 0, 0, 15] },
+                { text: "Sistema de peritagem forense estruturado em conformidade com as normas, com selo de integridade digital SHA-256. Todos os relatórios são temporalmente selados e auditáveis.\n\nAlgoritmo Hash: SHA-256 (Forense)\nTimestamp: RFC 3161\nValidade Prova: Indeterminada\nCertificação: UNIFIED - PROBATUM " + _unifedLiveVersion() + " · DORA COMPLIANT\n\nEste relatório cumpre com o Regulamento (UE) 2022/2554 (DORA) - Digital Operational Resilience Act, assegurando a resiliência operacional digital e a integridade das evidências digitais processadas.", style: 'normal', margin: [0, 0, 0, 15] },
 
                 // ========== 16. ANÁLISE TÉCNICO-JURÍDICA DETALHADA ==========
                 { text: "8. ANÁLISE TÉCNICO-JURÍDICA / DETAILED EXPERT ANALYSIS", style: 'h2' },
@@ -2456,7 +2503,7 @@ Fundamentação Legal: Art. 327.º CPP (Contraditório) · Art. 125.º CPP (Admi
                 { text: "SELAGEM TEMPORAL RFC 3161 — DATA CERTA eIDAS", style: 'h2', margin: [0, 10, 0, 5] },
                 { text: "Documento selado temporalmente via Protocolo RFC 3161 (TSA: FreeTSA.org), garantindo Data Certa eIDAS. Os selos .tsr individuais de cada evidência encontram-se arquivados na pasta 03_REPOSITORIO_OTS.", style: 'normal', margin: [0, 0, 0, 10] },
                 { text: "CONSULTOR TÉCNICO — COMPROMISSO DE HONRA E SALVAGUARDA (ART. 153.º E 155.º CPP)", style: 'h2', margin: [0, 10, 0, 5] },
-                { text: "Identificação:\n* Nome: Técnico Forense\n* Cargo: Analista e Consultor Forense Independente | Big Data Analytics\n* Estatuto: Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e consultoria técnica documental.\n\nNOTA DE SALVAGUARDA JURÍDICA E ÂMBITO: As conclusões constantes neste documento infraestruturam-se exclusivamente nos artefactos e elementos documentais disponibilizados pelo solicitante. O presente parecer constitui uma análise técnica independente de natureza consultiva e prova documental assistencial, não substituindo, para quaisquer efeitos processuais, a realização de uma consultoria técnica oficial ordenada pela autoridade judiciária competente.\n\nAnálise material baseada em dados estruturados fornecidos; o escopo limita-se à integridade financeira e documental dos ativos digitais apresentados, conforme Art. 125.º CPP.\n\nDECLARAÇÃO DE COMPROMISSO: Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado na qualidade de Consultor Técnico Independente, assumindo estritamente os deveres de independência, objetividade e imparcialidade previstos no Artigo 153.º do Código de Processo Penal Português. Certifico que a metodologia aplicada (Baseada em ISRS 4400 e boas práticas de Digital Forensics) é reprodutível e que os resultados aqui vertidos traduzem fielmente a análise técnica realizada sobre o lote de dados fornecido.\n\nData: " + dataEmissao + "\n\nAssinatura do Técnico Responsável Pela Análise\n\n[ UNIFED - PROBATUM CERTIFIED - ANALISTA E CONSULTOR FORENSE - v1.0-COMMERCIAL-LITIGATION ]\nEstudo de Viabilidade - Consultoria Forense Especializada - Uso restrito a mandato jurídico autorizado\nFundamentação: RGIT Art. 103.º (Fraude Fiscal) - Art. 104.º (Fraude Qualificada) - CRP Art. 32.º - CPP Art. 125.º", style: 'normal', margin: [0, 0, 0, 15] },
+                { text: "Identificação:\n* Nome: Técnico Forense\n* Cargo: Analista e Consultor Forense Independente | Big Data Analytics\n* Estatuto: Consultor Técnico Independente (Art. 155.º do CPP). Atuação em conformidade com o regime de liberdade de prova e consultoria técnica documental.\n\nNOTA DE SALVAGUARDA JURÍDICA E ÂMBITO: As conclusões constantes neste documento infraestruturam-se exclusivamente nos artefactos e elementos documentais disponibilizados pelo solicitante. O presente parecer constitui uma análise técnica independente de natureza consultiva e prova documental assistencial, não substituindo, para quaisquer efeitos processuais, a realização de uma consultoria técnica oficial ordenada pela autoridade judiciária competente.\n\nAnálise material baseada em dados estruturados fornecidos; o escopo limita-se à integridade financeira e documental dos ativos digitais apresentados, conforme Art. 125.º CPP.\n\nDECLARAÇÃO DE COMPROMISSO: Declaro, sob compromisso de honra, que o presente parecer técnico foi elaborado na qualidade de Consultor Técnico Independente, assumindo estritamente os deveres de independência, objetividade e imparcialidade previstos no Artigo 153.º do Código de Processo Penal Português. Certifico que a metodologia aplicada (Baseada em ISRS 4400 e boas práticas de Digital Forensics) é reprodutível e que os resultados aqui vertidos traduzem fielmente a análise técnica realizada sobre o lote de dados fornecido.\n\nData: " + dataEmissao + "\n\nAssinatura do Técnico Responsável Pela Análise\n\n[ UNIFED - PROBATUM CERTIFIED - ANALISTA E CONSULTOR FORENSE - " + _unifedLiveVersion() + " ]\nEstudo de Viabilidade - Consultoria Forense Especializada - Uso restrito a mandato jurídico autorizado\nFundamentação: RGIT Art. 103.º (Fraude Fiscal) - Art. 104.º (Fraude Qualificada) - CRP Art. 32.º - CPP Art. 125.º", style: 'normal', margin: [0, 0, 0, 15] },
 
                 // QR Code final (se disponível)
                 ...(qrCodeImg ? [
@@ -2938,8 +2985,14 @@ Fundamentação Legal: Art. 327.º CPP (Contraditório) · Art. 125.º CPP (Admi
             else fullMetrics = { session: sys.sessionId || 'N/A', masterHash: sys.masterHash || 'N/A', companyName: sys.analysis?.companyName || 'N/A', nif: sys.analysis?.nif || 'N/A', saftGross: sys.analysis?.saftGross || 0, dac7Total: sys.analysis?.dac7Total || 0, btorLedger: sys.analysis?.btorLedger || 0, btfInvoice: sys.analysis?.btfInvoice || 0, omissionPct: sys.analysis?.omissionPct || 0, verdict: sys.analysis?.verdict || 'N/A', top3Questions: sys.analysis?.top3Questions || [], merkleRoot: sys.analysis?.merkleRoot || 'N/A', monthlyData: sys.monthlyData || {}, auxiliaryData: sys.auxiliaryData || {}, totals: sys.analysis?.totals || {}, crossings: sys.analysis?.crossings || {}, twoAxis: sys.analysis?.twoAxis || {} };
         } catch(e) { console.warn('[ELASTIC] Erro ao obter métricas:', e); }
         const completePayload = {
-            metadata: { source: 'UNIFED-PROBATUM v1.0-COMMERCIAL-LITIGATION-P3.1', timestamp: new Date().toISOString(), sessionId: fullMetrics.session || sys.sessionId, version: sys.version || 'v1.0', language: window.currentLang || 'pt', demoMode: !!sys.demoMode, exportMode: mode, selectedYear: sys.selectedYear, selectedPeriodo: sys.selectedPeriodo, platform: fullMetrics.platform || 'Plataforma Digital Operacional (Anonimizado)', client: { name: fullMetrics.companyName, nif: fullMetrics.nif }, pendingTimestampEvidences: getPendingEvidenceIds() },
-            integrity: { masterHash: fullMetrics.masterHash, merkleRoot: fullMetrics.merkleRoot, algorithm: 'SHA-256', protocol: 'RFC 3161', eidas2Compliant: true, pendingTimestampWarning: hasPendingTimestampEvidences() ? 'Evidências sem selagem temporal: ' + getPendingEvidenceIds().join(', ') : null },
+            metadata: { source: 'UNIFED-PROBATUM ' + _unifedLiveVersion(), timestamp: new Date().toISOString(), sessionId: fullMetrics.session || sys.sessionId, version: sys.version || 'v1.0', language: window.currentLang || 'pt', demoMode: !!sys.demoMode, exportMode: mode, selectedYear: sys.selectedYear, selectedPeriodo: sys.selectedPeriodo, platform: fullMetrics.platform || 'Plataforma Digital Operacional (Anonimizado)', client: { name: fullMetrics.companyName, nif: fullMetrics.nif }, pendingTimestampEvidences: getPendingEvidenceIds() },
+            // F9.3-VECTOR6: eidas2Compliant lido dinamicamente de window.UNIFED_TSA_CONFIG
+            // (canónico em config.js, eidas2Compliant:false até validação ANS/CNCS). Se
+            // UNIFED_TSA_CONFIG não estiver disponível no contexto vivo (ver D13 — config.js
+            // é documental, não carregado via <script src> em index.html), resolve para
+            // estritamente 'false', nunca 'true' por omissão — elimina a contradição com
+            // "ESTADO DO SELO: NÃO APLICADO NESTA SESSÃO" (secção 8 do mesmo PDF).
+            integrity: { masterHash: fullMetrics.masterHash, merkleRoot: fullMetrics.merkleRoot, algorithm: 'SHA-256', protocol: 'RFC 3161', eidas2Compliant: !!(window.UNIFED_TSA_CONFIG && window.UNIFED_TSA_CONFIG.eidas2Compliant === true), pendingTimestampWarning: hasPendingTimestampEvidences() ? 'Evidências sem selagem temporal: ' + getPendingEvidenceIds().join(', ') : null },
             analysis: { totals: fullMetrics.totals, crossings: fullMetrics.crossings, twoAxis: fullMetrics.twoAxis, verdict: fullMetrics.verdict, top3Questions: fullMetrics.top3Questions, selectedQuestions: sys.analysis?.selectedQuestions || [], omissionPct: fullMetrics.omissionPct, saftGross: fullMetrics.saftGross, dac7Total: fullMetrics.dac7Total, btorLedger: fullMetrics.btorLedger, btfInvoice: fullMetrics.btfInvoice },
             monthlyData: fullMetrics.monthlyData,
             auxiliaryData: fullMetrics.auxiliaryData,

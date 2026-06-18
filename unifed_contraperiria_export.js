@@ -52,7 +52,11 @@
     }
 
     // ── Constantes de identificação ──────────────────────────────────────────
-    const MODULE_VERSION  = 'v1.0-COMMERCIAL-LITIGATION-P3.1';
+    // F9.3-VECTOR5: leitura dinâmica de window.UNIFED_VERSION.full, eliminando
+    // o drift de 'v1.0-COMMERCIAL-LITIGATION-P3.1' fixo (9+ patches atrasado)
+    // no pacote especificamente concebido para verificação independente pela
+    // contraparte — onde a coerência de versão é mais escrutinada.
+    const MODULE_VERSION  = (window.UNIFED_VERSION && window.UNIFED_VERSION.full) || 'v1.0-COMMERCIAL-LITIGATION-P3.1';
     const MODULE_ID       = 'UNIFED-PROBATUM-CONTRAPERIRIA';
     const PATCH_REGISTRY  = [
         {
