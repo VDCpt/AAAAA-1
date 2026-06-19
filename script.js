@@ -6804,57 +6804,33 @@ function updateDashboard() {
 
     const quantumBreakdownEl = document.getElementById('quantumBreakdown');
     if (quantumBreakdownEl) {
-        const qLang = currentLang;
-        quantumBreakdownEl.innerHTML = `
-            <div class="quantum-breakdown-item">
-                <span>BTOR ${qLang === 'pt' ? '(Despesas/Comissões Extrato)' : '(Expenses/Commissions Statement)'}:</span>
-                <span>${formatCurrency(cross.btor)}</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>BTF ${qLang === 'pt' ? '(Faturas)' : '(Invoices)'}:</span>
-                <span>${formatCurrency(cross.btf)}</span>
-            </div>
-            <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(0,229,255,0.3); margin-top:0.3rem; padding-top:0.3rem;">
-                <span>${qLang === 'pt' ? 'DISCREPÂNCIA DESPESAS/COMISSÕES' : 'EXPENSE/COMMISSION DISCREPANCY'}:</span>
-                <span style="color:var(--warn-primary);">${formatCurrency(cross.discrepanciaCritica)} (${cross.percentagemOmissao.toFixed(2)}%)</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>${qLang === 'pt' ? 'Ganhos (Extrato)' : 'Earnings (Statement)'}:</span>
-                <span>${formatCurrency(totals.ganhos)}</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>SAF-T ${qLang === 'pt' ? 'Bruto' : 'Gross'}:</span>
-                <span>${formatCurrency(totals.saftBruto)}</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>DAC7 (${UNIFEDSystem.selectedPeriodo}):</span>
-                <span>${formatCurrency(totals.dac7TotalPeriodo)}</span>
-            </div>
-            <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(245,158,11,0.3); margin-top:0.3rem; padding-top:0.3rem;">
-                <span>SAF-T vs DAC7 ${qLang === 'pt' ? 'DISCREPÂNCIA' : 'DISCREPANCY'}:</span>
-                <span style="color:var(--warn-secondary);">${formatCurrency(cross.discrepanciaSaftVsDac7)} (${cross.percentagemSaftVsDac7.toFixed(2)}%)</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>${qLang === 'pt' ? 'Meses com dados' : 'Months with data'}:</span>
-                <span>${mesesDados}</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>${qLang === 'pt' ? 'Média mensal' : 'Monthly average'}:</span>
-                <span>${formatCurrency(cross.discrepanciaCritica / mesesDados)}</span>
-            </div>
-            <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(0,229,255,0.3); margin-top:0.3rem; padding-top:0.3rem;">
-                <span>${qLang === 'pt' ? 'Impacto Mensal Mercado (38k)' : 'Monthly Market Impact (38k)'}:</span>
-                <span>${formatCurrency(cross.impactoMensalMercado)}</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>${qLang === 'pt' ? 'Impacto Anual Mercado' : 'Annual Market Impact'}:</span>
-                <span>${formatCurrency(cross.impactoAnualMercado)}</span>
-            </div>
-            <div class="quantum-breakdown-item">
-                <span>${qLang === 'pt' ? 'IMPACTO 7 ANOS' : '7‑YEAR IMPACT'}:</span>
-                <span style="color:var(--accent-primary); font-weight:800;">${formatCurrency(cross.impactoSeteAnosMercado)}</span>
-            </div>
+        const qLang = window.currentLang || 'pt';
+        const mesesDados = UNIFEDSystem.dataMonths.size || 1;
+        const mediaBruta = cross.discrepanciaCritica / mesesDados;
+        const mediaConservadora = cross.impactoMensalMercado / 38000;
+        const is2S = (UNIFEDSystem.selectedPeriodo || 'anual') === '2s';
+        const hasAssimetria = is2S && mesesDados < 6;
+
+        let html = `
+            <div class="quantum-breakdown-item"><span>BTOR ${qLang === 'pt' ? '(Despesas/Comissões Extrato)' : '(Expenses/Commissions Statement)'}:</span><span>${window.formatForensicCurrency(cross.btor)}</span></div>
+            <div class="quantum-breakdown-item"><span>BTF ${qLang === 'pt' ? '(Faturas)' : '(Invoices)'}:</span><span>${window.formatForensicCurrency(cross.btf)}</span></div>
+            <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(0,229,255,0.3); margin-top:0.3rem; padding-top:0.3rem;"><span>${qLang === 'pt' ? 'DISCREPÂNCIA DESPESAS/COMISSÕES' : 'EXPENSE/COMMISSION DISCREPANCY'}:</span><span style="color:var(--warn-primary);">${window.formatForensicCurrency(cross.discrepanciaCritica)} (${cross.percentagemOmissao.toFixed(2)}%)</span></div>
+            <div class="quantum-breakdown-item"><span>${qLang === 'pt' ? 'Ganhos (Extrato)' : 'Earnings (Statement)'}:</span><span>${window.formatForensicCurrency(totals.ganhos)}</span></div>
+            <div class="quantum-breakdown-item"><span>SAF-T ${qLang === 'pt' ? 'Bruto' : 'Gross'}:</span><span>${window.formatForensicCurrency(totals.saftBruto)}</span></div>
+            <div class="quantum-breakdown-item"><span>DAC7 (${UNIFEDSystem.selectedPeriodo}):</span><span>${window.formatForensicCurrency(totals.dac7TotalPeriodo)}</span></div>
+            <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(245,158,11,0.3); margin-top:0.3rem; padding-top:0.3rem;"><span>SAF-T vs DAC7 ${qLang === 'pt' ? 'DISCREPÂNCIA' : 'DISCREPANCY'}:</span><span style="color:var(--warn-secondary);">${window.formatForensicCurrency(cross.discrepanciaSaftVsDac7)} (${cross.percentagemSaftVsDac7.toFixed(2)}%)</span></div>
+            <div class="quantum-breakdown-item"><span>${qLang === 'pt' ? 'Meses com dados' : 'Months with data'}:</span><span>${mesesDados}</span></div>
+            <div class="quantum-breakdown-item"><span>${qLang === 'pt' ? 'Omissão média mensal (caso concreto)' : 'Average monthly omission (specific case)'}:</span><span>${window.formatForensicCurrency(mediaBruta)}</span></div>
+            <div class="quantum-breakdown-item" style="border-top: 1px solid rgba(0,229,255,0.3); margin-top:0.3rem; padding-top:0.3rem;"><span>${qLang === 'pt' ? 'Média conservadora IC99% (por operador)' : 'Conservative IC99% average (per operator)'}:</span><span>${window.formatForensicCurrency(mediaConservadora)}</span></div>
+            <div class="quantum-breakdown-item"><span>${qLang === 'pt' ? 'Impacto Mensal Mercado (38k)' : 'Monthly Market Impact (38k)'}:</span><span>${window.formatForensicCurrency(cross.impactoMensalMercado)}</span></div>
+            <div class="quantum-breakdown-item"><span>${qLang === 'pt' ? 'Impacto Anual Mercado' : 'Annual Market Impact'}:</span><span>${window.formatForensicCurrency(cross.impactoAnualMercado)}</span></div>
+            <div class="quantum-breakdown-item"><span>${qLang === 'pt' ? 'IMPACTO 7 ANOS' : '7‑YEAR IMPACT'}:</span><span style="color:var(--accent-primary); font-weight:800;">${window.formatForensicCurrency(cross.impactoSeteAnosMercado)}</span></div>
         `;
+
+        if (hasAssimetria) {
+            html += `<div class="quantum-breakdown-item" style="border-top: 1px solid rgba(245,158,11,0.5); margin-top:0.3rem; padding-top:0.3rem; color: #f59e0b; background: rgba(245,158,11,0.05); border-radius: 4px; padding: 6px 10px;"><span>⚠️ ${qLang === 'pt' ? 'Aviso: DAC7 (2.º Semestre = 6 meses) vs Extratos/SAF-T (4 meses) — a comparação direta pode subestimar a discrepância. Considere pro-rata.' : 'Warning: DAC7 (2nd Semester = 6 months) vs Statements/SAF-T (4 months) — direct comparison may underestimate discrepancy. Consider pro-rata.'}</span></div>`;
+        }
+        quantumBreakdownEl.innerHTML = html;
     }
 
     const jurosCard = document.getElementById('jurosCard');
@@ -9492,6 +9468,27 @@ window._syncPureDashboard = (function() {
                     _atfOlsEl.innerText = `Regressão linear (OLS) · ${diffs.length} pontos`;
                     updated++;
                 }
+
+                // ── FASE 10 — CÁLCULO DINÂMICO DE OUTLIERS ──────────────────────────────
+                const diffValues = monthKeys.map(m => Math.abs((monthlyData[m].despesas || 0) - (monthlyData[m].faturaPlataforma || 0)));
+                const avgDiff = diffValues.reduce((a, b) => a + b, 0) / (diffValues.length || 1);
+                const stdDevDiff = diffValues.length > 1 ? Math.sqrt(diffValues.map(x => Math.pow(x - avgDiff, 2)).reduce((a, b) => a + b, 0) / (diffValues.length - 1)) : 0;
+                const outlierCount = stdDevDiff > 0 ? diffValues.filter(x => Math.abs(x - avgDiff) > 2 * stdDevDiff).length : 0;
+
+                const outliersEl = document.getElementById('pure-atf-outliers');
+                if (outliersEl) {
+                    outliersEl.setAttribute('data-i18n-ignore', 'true');
+                    outliersEl.textContent = `${outlierCount} outliers > 2σ`;
+                }
+                const outliersSubEl = document.getElementById('pure-atf-outliers-sub');
+                if (outliersSubEl) {
+                    outliersSubEl.setAttribute('data-i18n-ignore', 'true');
+                    const isPT = window.currentLang === 'pt';
+                    outliersSubEl.textContent = outlierCount === 0
+                        ? (isPT ? 'Sem picos estatisticamente anómalos' : 'No statistically anomalous peaks')
+                        : (isPT ? `${outlierCount} ponto(s) fora do intervalo esperado` : `${outlierCount} point(s) outside expected range`);
+                }
+                // ── FIM BLOCO 2 ───────────────────────────────────────────────────────────
             } else if (monthKeys.length === 1) {
                 if (atfSpEl)       { atfSpEl.innerHTML = '0<span style="font-size:1rem;opacity:0.6">/100</span>'; }
                 if (atfClassifyEl) { atfClassifyEl.innerText = 'DADOS INSUFICIENTES (1 mês)'; }
@@ -10698,10 +10695,13 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             const prev = _masterHashValue;
             _masterHashValue = val;
             if (val && val.length === 64 && val !== prev) {
-                console.log('[WATCH-4] masterHash atualizado (' + val.substring(0,16) + '...) — a regenerar QR Code.');
+                console.log('[WATCH-4] masterHash atualizado (' + val.substring(0,16) + '...) — a regenerar QR Code e sincronizar DOM.');
                 if (typeof generateQRCode === 'function') {
                     // Micro-adiamento para garantir que o DOM está pronto
                     setTimeout(generateQRCode, 0);
+                }
+                if (typeof window._syncPureDashboard === 'function') {
+                    setTimeout(() => window._syncPureDashboard(window.UNIFEDSystem), 50);
                 }
             }
         },
