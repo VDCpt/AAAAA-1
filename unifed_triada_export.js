@@ -256,6 +256,18 @@
     // DEEP TREE WALK ABSOLUTO (SANITIZAÇÃO RECURSIVA PROFUNDA)
     // =========================================================================
     function deepSanitizePayload(obj) {
+        // ── F11.2-SANITIZE-GUARD: protecção contra sanitização de dados reais ──
+        // Sem este guard, se um caso REAL (demoMode=false) contiver, por
+        // coincidência, uma das strings-alvo da anonimização demo (ex.: um
+        // operador real efectivamente chamado "Uber"/"Bolt", ou um NIF que
+        // coincida com o placeholder '999 999 990'), esta função substituiria
+        // silenciosamente esse conteúdo pelo rótulo anonimizado — corrompendo
+        // prova real sem qualquer registo. O guard impede qualquer sanitização
+        // fora de demoMode === true, devolvendo o objecto inalterado.
+        if (!window.UNIFEDSystem || !window.UNIFEDSystem.demoMode) {
+            console.warn('[FORENSIC] Tentativa de sanitização fora de ambiente DEMO bloqueada.');
+            return obj;
+        }
         if (typeof obj !== 'object' || obj === null) return obj;
         
         if (Array.isArray(obj)) {

@@ -6104,10 +6104,28 @@ async function performAudit() {
             window.currentLang = 'pt';
         }
 
+        // ── F11.1-ANALYSIS-COMPLETE-PAYLOAD: campos explícitos de auditoria ────
+        // Aditivo: systemData (objeto completo) preservado; campos top-level
+        // adicionados para consumo direto sem necessidade de navegar systemData.
+        const _aceDanoSeteAnos = (UNIFEDSystem.analysis && UNIFEDSystem.analysis.crossings && UNIFEDSystem.analysis.crossings.impactoSeteAnosMercado) || 0;
+        const _aceMasterHash   = UNIFEDSystem.masterHash || '';
+        const _aceTimestamp    = new Date().toISOString();
         window.dispatchEvent(new CustomEvent('UNIFED_ANALYSIS_COMPLETE', {
-            detail: { systemData: UNIFEDSystem }
+            detail: {
+                systemData: UNIFEDSystem,
+                danoSeteAnos: _aceDanoSeteAnos,
+                masterHash: _aceMasterHash,
+                timestamp: _aceTimestamp
+            }
         }));
-        console.log('[UNIFED-SYNC] ✅ UNIFED_ANALYSIS_COMPLETE despachado (systemData incluído).');
+        if (typeof ForensicLogger !== 'undefined' && typeof ForensicLogger.addEntry === 'function') {
+            ForensicLogger.addEntry('ANALYSIS_COMPLETE', {
+                danoSeteAnos: _aceDanoSeteAnos,
+                masterHash: _aceMasterHash,
+                timestamp: _aceTimestamp
+            });
+        }
+        console.log('[UNIFED-SYNC] ✅ UNIFED_ANALYSIS_COMPLETE despachado (systemData + danoSeteAnos + masterHash + timestamp incluídos; ForensicLogger registado).');
 
         // FALHA 7 — R24: TOP 3 gerado automaticamente após análise.
         // Requisito de estabilidade forense: overlay bloqueia interação durante processamento cognitivo.
@@ -6586,6 +6604,15 @@ function performForensicCrossings() {
         vat23: cross.ivaFalta,
         vat6: cross.ivaFalta6
     });
+
+    // ── F11.3 — BLOCO 1.2 (reformulado, ESTRITAMENTE ADITIVO) ──────────────
+    // Exposição directa da média mensal do CASO CONCRETO (discrepanciaCritica/
+    // mesesDados, ex.: 534,15€) para consumo por APIs externas/contrato de
+    // interface. NÃO altera nem substitui mediaConservadora/macroMensal/
+    // macroAnual/macro7Anos (Z-Score IC99%, D14) — essa arquitectura de
+    // apresentação permanece intocada em #quantumBreakdown e em
+    // _syncPureDashboard. Esta variável é um campo NOVO e independente.
+    UNIFEDSystem.analysis.mediaMensalReal = (cross.discrepanciaCritica / mesesDados) || 0;
 }
 
 function selectQuestions(riskKey) {
@@ -8756,7 +8783,7 @@ function syncExternalDashboard() {
 }
 
 function registerGlobalConfig() {
-    window.UNIFED_CONFIG = {
+    window.UNIFED_CONFIG = Object.freeze({
         version: UNIFEDSystem.version,
         buildDate: '2025-03-15',
         supportedPlatforms: Object.keys(PLATFORM_DATA),
@@ -8771,7 +8798,7 @@ function registerGlobalConfig() {
             charts: typeof Chart !== 'undefined',
             docx: typeof window.exportDOCX === 'function'
         }
-    };
+    });
     
     console.log('[UNIFED] Configuração global registrada:', window.UNIFED_CONFIG);
 }
@@ -10692,6 +10719,11 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     Object.defineProperty(window.UNIFEDSystem, 'masterHash', {
         get: function() { return _masterHashValue; },
         set: function(val) {
+            // Halt mutation após selagem — EXCEPTO a purga forense legítima
+            // (FASE3.1-C4, registerPageUnload escreve '0'.repeat(64) no unload
+            // para scrubbing de dados sensíveis; bloquear esse caso quebraria
+            // a privacidade da purga, não a invariância do selo).
+            if (window.UNIFEDSystem._masterHashFrozen && val !== '0'.repeat(64)) { return; }
             const prev = _masterHashValue;
             _masterHashValue = val;
             if (val && val.length === 64 && val !== prev) {
@@ -10948,7 +10980,7 @@ console.log('[UNIFED-RETIFICACOES] \u2705 Bloco de Retifica\u00e7\u00f5es Cir\u0
                     ? "⚠ [FORENSIC CLEANUP AND SAFEGUARD ALERT]\n\n" +
                       "Before closing the system, please confirm that you have downloaded and saved the Lawyer Package on the encrypted Pen Drive and that the Analyst Package has been properly stored on the secure disk.\n\n" +
                       "Upon confirmation, the system will perform an immediate and irreversible cryptographic purge: all analyses performed, volatile cache data, and the secure IndexedDB repository will be permanently deleted from the browser for new analyses.\n\n" +
-                      "Do you really want to finish and sanitize the session?"
+                      "Do you really want to terminate and sanitize the session?"
                     : "⚠ [ALERTA DE HIGIENIZAÇÃO E SALVAGUARDA FORENSE]\n\n" +
                       "Antes de encerrar o sistema, confirme impreterivelmente se descarregou e guardou o Pacote do Advogado na Pen Drive cifrada e se o Pacote do Analista foi devidamente armazenado no disco de segurança.\n\n" +
                       "Ao confirmar, o sistema executará uma purga criptográfica imediata e irreversível: todas as análises efetuadas, dados voláteis em cache e o repositório seguro IndexedDB serão permanentemente eliminados do browser para novas análises.\n\n" +
