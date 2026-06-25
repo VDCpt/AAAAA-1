@@ -3,6 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- F17 (Achado RT-08/P8): Content-Security-Policy. NOTA DE TRANSPARÊNCIA:
+         'unsafe-inline' em script-src/style-src é necessário porque este documento
+         contém 13 blocos <script> inline e 246+ atributos style="" inline — uma CSP
+         sem 'unsafe-inline' quebraria a aplicação. Esta política MITIGA o vector
+         descrito em RT-08 (injecção de <script src="https://dominio-externo/..."> via
+         MITM/servidor comprometido, restringindo script-src a domínios explicitamente
+         listados) mas NÃO elimina XSS via inline script — isso exigiria refactor para
+         nonces/hashes por bloco, fora do âmbito desta correcção. connect-src
+         deliberadamente NÃO inclui api.unifed.com, reforçando o killswitch já presente
+         no código (ver linha ~22). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com cdn.jsdelivr.net unpkg.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdnjs.cloudflare.com; font-src 'self' fonts.gstatic.com cdnjs.cloudflare.com data:; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self';">
+
     <meta name="description" content="UNIFED - PROBATUM (Unidade Independente de Inteligência Forense Económica e Digital) v1.0 · ISO/IEC 27037 · D.L. 28/2019 · COURT READY · EVIDÊNCIA DE MATERIALIDADE">
     <meta name="author" content="UNIFED - PROBATUM · Unidade Independente de Inteligência Forense Económica e Digital">
     <title>UNIFED - PROBATUM · v1.0 · ISO/IEC 27037 · COURT READY · EVIDÊNCIA DE MATERIALIDADE</title>
@@ -56,28 +69,28 @@
          BIBLIOTECAS CRÍTICAS (CARREGADAS VIA CDN – COMPATÍVEL COM GITHUB PAGES)
          ──────────────────────────────────────────────────────────────────────────── -->
     <!-- CryptoJS (hash SHA‑256) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- F17/P7: SRI pendente, ver ERRATA_INSPECCAO_F17 -->
 
     <!-- pdfMake (geração de PDF) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Chart.js (gráficos ATF) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- QRCode.js (QR codes) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- JSZip (compactação dos pacotes .zip) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- jsPDF (fallback para alguns PDFs) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Outras bibliotecas auxiliares (PapaParse, pdf.js, docx) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js" crossorigin="anonymous" referrerpolicy="no-referrer"
             onerror="this.onerror=null;this.src='https://unpkg.com/docx@7.8.2/build/index.js'"></script>
 
     <!-- Verificação de carregamento do pdfMake -->
@@ -96,7 +109,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 
     <!-- FOLHAS DE ESTILO (locais) -->
     <link rel="stylesheet" href="style.css">
@@ -363,7 +376,120 @@ console.log('[UNIFED-CONFIG] ℹ️  Proxy LLM configurado: ' + (window.UNIFED_P
 })();
     </script>
 
-<!-- ── PATCH P13 — version.js (fonte única de versão) ───────────────── -->
+<!-- ── PATCH P33 — Camada de Acesso 2 (Segunda Janela de Boas-Vindas/Login) ──
+     Independente da Camada 1 (linha ~239): não consulta UNIFED_CONFIG.modo,
+     pelo que NÃO é dispensada em Modo DEMO — é incondicionalmente obrigatória.
+     Validação de password exclusivamente por comparação de digest SHA-256
+     (WebCrypto). Nenhuma password em texto limpo está presente neste ficheiro.
+     Aviso de engenharia (ver Adenda de Segurança no relatório): esta camada
+     é um filtro de apresentação (gate cosmético), não um controlo de acesso
+     com garantias de confidencialidade — ver justificação no relatório anexo.
+─────────────────────────────────────────────────────────────────────────── -->
+<script>
+(function _unifedSecondaryAccessGate() {
+    'use strict';
+    const EXPECTED_USER = 'admin';
+    const EXPECTED_PASS_SHA256 = '6185a95d1f62cab17c378d08a4f2e9b0bca9835a63c4287fa5614d8e11ea95b3';
+    const GATE_SESSION_KEY = 'unifed_secondary_gate_passed';
+
+    if (sessionStorage.getItem(GATE_SESSION_KEY) === 'true') {
+        console.log('[SECURITY] ✅ Camada de Acesso 2 — sessão já validada.');
+        return;
+    }
+
+    async function sha256Hex(text) {
+        const data = new TextEncoder().encode(text);
+        const buf = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function lang() { return (window.currentLang === 'en') ? 'en' : 'pt'; }
+    function t(el) { return el.getAttribute(lang() === 'en' ? 'data-en' : 'data-pt') || ''; }
+
+    function buildOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'unifed-secondary-gate-overlay';
+        overlay.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(10,15,30,0.98); z-index:100000; display:flex;
+            align-items:center; justify-content:center; font-family:'JetBrains Mono', monospace;`;
+        overlay.innerHTML = `
+            <div style="background:#0f172a; border:1px solid #00e5ff; border-radius:8px; padding:2rem; max-width:420px; width:92vw; text-align:center;">
+                <h3 data-pt="🔐 UNIFED-PROBATUM · Acesso Reservado" data-en="🔐 UNIFED-PROBATUM · Restricted Access"
+                    style="color:#00e5ff; margin-bottom:0.75rem;">🔐 UNIFED-PROBATUM · Acesso Reservado</h3>
+                <p data-pt="Segunda camada de verificação. Introduza as credenciais de operador." data-en="Second access-verification layer. Enter operator credentials."
+                   style="color:#94a3b8; margin-bottom:1.25rem; font-size:0.85rem;">Segunda camada de verificação. Introduza as credenciais de operador.</p>
+                <label data-pt="Utilizador" data-en="Username" style="display:block; text-align:left; color:#64748b; font-size:0.7rem; margin-bottom:2px;">Utilizador</label>
+                <input type="text" id="unifed-gate2-user" autocomplete="off"
+                    style="width:100%; padding:8px; background:#1e293b; border:1px solid #334155; color:white; border-radius:4px; margin-bottom:0.75rem;">
+                <label data-pt="Palavra-passe" data-en="Password" style="display:block; text-align:left; color:#64748b; font-size:0.7rem; margin-bottom:2px;">Palavra-passe</label>
+                <input type="password" id="unifed-gate2-pass" autocomplete="off"
+                    style="width:100%; padding:8px; background:#1e293b; border:1px solid #334155; color:white; border-radius:4px; margin-bottom:1rem;">
+                <button id="unifed-gate2-submit" data-pt="Validar Acesso" data-en="Validate Access"
+                    style="background:#00e5ff; color:#000; border:none; padding:8px 24px; border-radius:4px; cursor:pointer; font-weight:bold;">Validar Acesso</button>
+                <p id="unifed-gate2-error" data-pt="Credenciais inválidas. Tente novamente." data-en="Invalid credentials. Try again."
+                   style="color:#ef4444; font-size:0.75rem; margin-top:1rem; display:none;">Credenciais inválidas. Tente novamente.</p>
+                <p id="unifed-gate2-counter" style="color:#475569; font-size:0.68rem; margin-top:4px;"></p>
+            </div>`;
+        // Sincroniza texto inicial com o idioma corrente (a UI global pode já ter alternado para EN antes desta camada renderizar).
+        overlay.querySelectorAll('[data-pt][data-en]').forEach(el => { el.textContent = t(el); });
+        return overlay;
+    }
+
+    function showGateModal() {
+        return new Promise((resolve) => {
+            const mount = () => {
+                const overlay = buildOverlay();
+                document.body.appendChild(overlay);
+                document.documentElement.style.overflow = 'hidden';
+                const userInput = overlay.querySelector('#unifed-gate2-user');
+                const passInput = overlay.querySelector('#unifed-gate2-pass');
+                const button = overlay.querySelector('#unifed-gate2-submit');
+                const errorP = overlay.querySelector('#unifed-gate2-error');
+                const counterP = overlay.querySelector('#unifed-gate2-counter');
+                let attempts = 0;
+                const attempt = async () => {
+                    const user = userInput.value;
+                    const pass = passInput.value;
+                    if (!user || !pass) return;
+                    button.disabled = true;
+                    const passHash = await sha256Hex(pass);
+                    const ok = (user === EXPECTED_USER) && (passHash === EXPECTED_PASS_SHA256);
+                    passInput.value = '';
+                    if (ok) {
+                        sessionStorage.setItem(GATE_SESSION_KEY, 'true');
+                        overlay.remove();
+                        document.documentElement.style.overflow = '';
+                        resolve(true);
+                    } else {
+                        attempts++;
+                        errorP.style.display = 'block';
+                        counterP.textContent = `(${attempts}/3)`;
+                        button.disabled = false;
+                        if (attempts >= 3) { resolve(false); }
+                    }
+                };
+                button.onclick = attempt;
+                passInput.onkeypress = (e) => { if (e.key === 'Enter') attempt(); };
+            };
+            if (document.body) { mount(); } else { document.addEventListener('DOMContentLoaded', mount); }
+        });
+    }
+
+    (async function gate() {
+        const success = await showGateModal();
+        if (!success) {
+            const lockHtml = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0f1e;">
+                <div style="text-align:center;border:1px solid #ef4444;padding:48px;border-radius:8px;">
+                    <h1 style="color:#ef4444;">ACESSO NEGADO</h1>
+                    <p style="color:#94a3b8;">Camada de Acesso 2 — Autenticação falhada após 3 tentativas.</p>
+                    <p style="color:#64748b;">Recarregue a página para tentar novamente.</p>
+                </div></div>`;
+            if (document.body) { document.body.innerHTML = lockHtml; }
+            throw new Error('[SECURITY] ⛔ Camada de Acesso 2 — Falha de Autenticação. Sistema Bloqueado.');
+        }
+    })().catch(err => console.error(err));
+})();
+</script>
 <script src="version.js"></script>
 <script src="translations.js"></script>
 <script src="unifed_questionnaire_50questions.js"></script>
@@ -452,7 +578,7 @@ console.log('[UNIFED-CONFIG] ℹ️  Proxy LLM configurado: ' + (window.UNIFED_P
         })();
     </script>
 </head>
-<body>
+<body data-lang="pt">
 
     <!-- SPLASH SCREEN -->
     <div id="welcome-screen" class="splash-screen" style="display:flex; z-index:99999;">

@@ -397,6 +397,9 @@ window.initLanguageSwitcher = function() {
             // alternância padrão: se veio sem argumento, muda para o outro
             window.currentLang = window.currentLang === 'pt' ? 'en' : 'pt';
         }
+        // F17 (P5/B1-01): sincronizar <html lang> e <body data-lang> — elimina flash visual PT→EN
+        document.documentElement.setAttribute('lang', window.currentLang === 'en' ? 'en-US' : 'pt-PT');
+        document.body.setAttribute('data-lang', window.currentLang);
         if (window.localStorage) {
             localStorage.setItem('unifed_language', window.currentLang);
         }

@@ -235,10 +235,18 @@
                 nota: 'Valores históricos preservados para rastreabilidade forense. Valor operacional: zScoreIC99_runtime.'
             },
             coerenciaTotal: coerente,
+            // F17 (Achado por Lapso): nota explícita para impedir leitura equívoca —
+            // coerenciaTotal/veredicto referem-se exclusivamente à consistência interna
+            // entre os 4 pontos de cálculo (coerente). coerenciaComZScore é um SEGUNDO
+            // teste, independente, contra o motor Z-Score em runtime, e diverge POR
+            // DESENHO (ver nota em verificacaoZScore). Os dois campos não são
+            // contraditórios entre si — testam coisas diferentes.
+            notaLegibilidade: 'coerenciaTotal avalia apenas verificacaoInterna (4 pontos de cálculo idênticos). ' +
+                'coerenciaComZScore é um teste adicional e independente — o seu valor false é esperado, não um FAIL.',
             veredicto: coerente
                 ? 'PASS — coerência interna confirmada entre os 4 pontos de cálculo. Base matemática consistente.'
                 : 'FAIL — divergência interna detectada (' + _internalDelta.toFixed(2) + '€). Investigar imediatamente.',
-            valorAnteriorViciado: '1.449.248.997,00 € (factor 0.85 hardcoded)',
+            valorHistorico_factor085: '1.449.248.997,00 € (factor 0.85 hardcoded) — designação anterior "valorAnteriorViciado" renomeada em F17 (Achado por Lapso) para evitar linguagem auto-incriminatória; ver TERMO_ENCERRAMENTO_PERICIAL_F17.md',
             valorOperacionalActual: _crossRuntime !== null
                 ? _crossRuntime.toFixed(2) + ' € (Z-Score IC 99%, n=' + mesesDados + ' meses)'
                 : '1.704.998.820,00 € (escalar directo, fallback)'
@@ -538,10 +546,19 @@
             const instrucoesTxt = _buildInstrucoes(verificacaoMat);
 
             // ── Gerar README_CHECKSUMS.txt ───────────────────────────────────
+            // F17 (Achados P2/P3/B2-04): a instrução de verificação anterior (cat + sha256sum
+            // do conteúdo bruto dos JSON) NUNCA reproduzia o Master Hash, porque o algoritmo
+            // real é sha256(join(hashesIndividuais, '\n')) — ver linha ~528 acima. Corrigido
+            // para reflectir o método real, verificado nesta fase por execução directa.
             const checksumsTxt = [
                 'UNIFED-PROBATUM | CHECKSUMS DE INTEGRIDADE DO PACOTE',
                 'Gerado: ' + new Date().toISOString(),
                 'Master Hash (SHA-256 dos hashes): ' + masterHashFinal,
+                '',
+                'ÂMBITO DO MASTER HASH (Achado P3): cobre exclusivamente os 9 ficheiros',
+                'JSON numerados 01-09 abaixo. 10_INSTRUCOES_VERIFICACAO.txt e o PDF',
+                'UNIFED_Protocolo_Auditoria_Tribunal.pdf são ficheiros auxiliares,',
+                'deliberadamente excluídos do cálculo (gerados após o cálculo do hash).',
                 '',
                 'FICHEIRO                              SHA-256                                                           BYTES',
                 '─'.repeat(110),
@@ -552,11 +569,14 @@
                 'MASTER HASH (SHA-256 de todos os hashes acima):',
                 masterHashFinal,
                 '',
-                'INSTRUÇÃO DE VERIFICAÇÃO:',
-                '  cat 01_MANIFESTO*.json 02_LOG*.json 03_CADEIA*.json 04_AUDIT*.json',
-                '      05_ESTADO*.json 06_METRICAS*.json 07_PATCH*.json 08_VERIFIC*.json',
-                '      09_CONFIG*.json | sha256sum',
-                '  (o resultado deve coincidir com o Master Hash acima)'
+                'INSTRUÇÃO DE VERIFICAÇÃO (método real — corrigido em F17, verificado por execução):',
+                '  1. Extrair os 9 hashes SHA-256 (coluna 2 da tabela acima), em MAIÚSCULAS,',
+                '     na mesma ordem (01 a 09).',
+                '  2. Concatená-los com newline (\\n) como separador, SEM newline final.',
+                '  3. Calcular SHA-256 dessa string concatenada.',
+                '  Comando bash equivalente (a partir desta pasta):',
+                '    printf \'%s\' "$(awk \'/^[0-9]{2}_.*\\.json/ {print $2}\' 00_README_CHECKSUMS.txt)" | sha256sum',
+                '  (o resultado deve coincidir com o Master Hash acima — testado e confirmado em F17)'
             ].join('\n');
 
             // ── Empacotar em ZIP ────────────────────────────────────────────

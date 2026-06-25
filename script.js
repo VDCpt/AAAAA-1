@@ -2507,10 +2507,23 @@ const ForensicLogger = {
     },
 
     addEntry(action, data = {}) {
+        const _now = new Date();
+        // F17 (Achado por Lapso): equivalente local Europe/Lisbon (WET/WEST, DST automático
+        // via Intl — não hardcoded) acrescentado a par do timestamp UTC, para leitura directa
+        // sem cálculo manual por terceiros (ex.: contra-perito, tribunal).
+        let _localPT;
+        try {
+            _localPT = new Intl.DateTimeFormat('pt-PT', {
+                timeZone: 'Europe/Lisbon', dateStyle: 'short', timeStyle: 'long'
+            }).format(_now);
+        } catch (e) {
+            _localPT = 'N/A (Intl.DateTimeFormat indisponível)';
+        }
         const entry = {
             id: this.logs.length + 1,
-            timestamp: new Date().toISOString(),
-            timestampUnix: Math.floor(Date.now() / 1000),
+            timestamp: _now.toISOString(),
+            timestampLocal_PT: _localPT + ' (Europe/Lisbon, WET/WEST automático)',
+            timestampUnix: Math.floor(_now.getTime() / 1000),
             sessionId: typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.sessionId ? UNIFEDSystem.sessionId : 'PRE_SESSION',
             user: typeof UNIFEDSystem !== 'undefined' && UNIFEDSystem.client?.name ? UNIFEDSystem.client.name : 'Anónimo',
             action: action,
@@ -3029,7 +3042,13 @@ function updateDynamicContent() {
         showTwoAxisAlerts();
     }
     const verdictPercentLabel = document.getElementById('verdictPercentLabel');
-    if (verdictPercentLabel) verdictPercentLabel.textContent = translations[currentLang].verdictPercent;
+    if (verdictPercentLabel) {
+        // FIX: .textContent destruiria o <span id="verdictSessionId"> filho.
+        // Actualiza só o nó de texto inicial, preservando o span do Session ID.
+        const _textNode = Array.from(verdictPercentLabel.childNodes).find(n => n.nodeType === 3);
+        if (_textNode) _textNode.textContent = translations[currentLang].verdictPercent + ' ';
+        else verdictPercentLabel.insertBefore(document.createTextNode(translations[currentLang].verdictPercent + ' '), verdictPercentLabel.firstChild);
+    }
     
     if (UNIFEDSystem.chart) renderChart();
     if (UNIFEDSystem.discrepancyChart) renderDiscrepancyChart();
@@ -3044,6 +3063,9 @@ let currentLang = 'pt';
 // ============================================================================
 function aplicarTraducaoDinamicaUI(lang) {
     window.currentLang = lang || 'pt';
+    // F17 (P5/B1-01): sincronizar <html lang> e <body data-lang> — elimina flash visual PT→EN
+    document.documentElement.setAttribute('lang', window.currentLang === 'en' ? 'en-US' : 'pt-PT');
+    document.body.setAttribute('data-lang', window.currentLang);
     
     // Varre todos os elementos com bind declarativo de internacionalização
     const elementosTraduziveis = document.querySelectorAll('[data-pt]');
@@ -3462,7 +3484,11 @@ function switchLanguage() {
     if (quantumNote) quantumNote.textContent = t.quantumNote;
     
     const verdictPercentLabel = document.getElementById('verdictPercentLabel');
-    if (verdictPercentLabel) verdictPercentLabel.textContent = t.verdictPercent;
+    if (verdictPercentLabel) {
+        const _textNode2 = Array.from(verdictPercentLabel.childNodes).find(n => n.nodeType === 3);
+        if (_textNode2) _textNode2.textContent = t.verdictPercent + ' ';
+        else verdictPercentLabel.insertBefore(document.createTextNode(t.verdictPercent + ' '), verdictPercentLabel.firstChild);
+    }
     
     const alertCriticalTitle = document.getElementById('alertCriticalTitle');
     if (alertCriticalTitle) alertCriticalTitle.textContent = t.alertCriticalTitle;
@@ -7788,7 +7814,7 @@ async function generateMasterHash() {
         client: UNIFEDSystem.client,
         docs: UNIFEDSystem.documents,
         session: UNIFEDSystem.sessionId,
-        months: Array.from(UNIFEDSystem.dataMonths),
+        months: Array.from(UNIFEDSystem.dataMonths || []),
         twoAxis: UNIFEDSystem.analysis.twoAxis,
         timestamp: Date.now(),
         version: UNIFEDSystem.version
@@ -8889,7 +8915,10 @@ function validateScriptIntegrity() {
         'processFile', 'registerClient', 'forensicDataSynchronization'
     ];
     
-    const missing = criticalFunctions.filter(fn => typeof window[fn] !== 'function' && typeof eval(fn) !== 'function');
+    // F17: eval(fn) removido (Achado RT-10/P6) — as 11 funções críticas são declarações
+    // globais de topo (function/async function), logo sempre acessíveis via window[fn].
+    // Verificado nesta fase: nenhuma das 11 depende de scope local não exposto a window.
+    const missing = criticalFunctions.filter(fn => typeof window[fn] !== 'function');
     
     if (missing.length > 0) {
         console.error('[UNIFED] Funções críticas ausentes:', missing);

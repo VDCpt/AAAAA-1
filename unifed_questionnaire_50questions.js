@@ -968,6 +968,11 @@ window.calcularDanoComSeriesMensais = function(nMotoristas = 38000) {
         const analysis = (window.UNIFEDSystem && window.UNIFEDSystem.analysis) || {};
         const cross    = analysis.crossings || {};
         const mediaMensalFallback = cross.discrepanciaMensalMedia || 0;
+        // F17 (Achado por Lapso): aviso explícito quando o fallback resulta em 0 —
+        // distingue "discrepância real de zero" de "dado ausente/undefined mascarado pelo || 0".
+        if (mediaMensalFallback === 0 && !cross.discrepanciaMensalMedia) {
+            console.warn('[MODELO ESTATÍSTICO] discrepanciaMensalMedia ausente/undefined — fallback usou 0. Verificar se é discrepância real ou dado não calculado.');
+        }
         return window.calcularDanoConservador(mediaMensalFallback, nMotoristas);
     }
     const seriesMensais = monthKeys.map(m =>
