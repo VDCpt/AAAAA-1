@@ -32,15 +32,18 @@ window.UNIFED_ArchitectureReport = {
         // aos 8 ficheiros listados — ver runAllValidations() para o tratamento
         // gracioso desse cenário (não gera falso "CORROMPIDO").
         const MODULE_INTEGRITY = {
-            // F17: hash actualizado de f16912e6… (UNIF-L4, desactualizado) para 667c86f2… (UNIF-L5, real) — Achado B3-01/P1
-            'script.js': '667c86f2acf9267de013e0fe9d76b0cf5c0834f6d4eb92a58ea2df6ade5b93b7',
+            // F18: hash final de script.js, calculado DEPOIS de todas as edições desta fase
+            // (remoção eval() + sync data-lang [F17] + correcção D-LANG-02 CARREGANDO [F18]).
+            // Lição do Achado A5: este valor só foi fixado depois de fechar todas as
+            // edições a script.js nesta fase — não antes, para não repetir o drift.
+            'script.js': '2bab4f9a5b7d88103aa6f281ce67fa88d5dc4706abfa3b936653b2360aeecf28',
             'unifed_triada_export.js': 'c173d05c8c14e3ce38987920fedecf75fba4f5b78bb4217ce2f545490ad6074b',
             'unifed_questionnaire_50questions.js': 'fb85ac006cddfeb695fabe9cea90baeed27eb4941473a588adad9b5ef22973f1',
             'unifed_merkle_engine.js': 'af6b7a4d2cb9e55818454d7292a9abc91f36a743473f439c7f54a09737956ff5',
             'enrichment.js': '1d6b9fd8ead518398d2c289f56ece1449a1118f72c92c94714dc3ec1e695f33b',
             'nexus.js': '68e41429abdeae7f87081b1851f66ab0dc8833510de179e56b79a4fdf6a6e45e',
             'translations.js': '249fe01ae7fa041b5567a6d508290211f275828c6791f01ec5769e9c09ee3ce1',
-            'script_injection.js': 'fda58b5ca22d0427d0ce8e4fade96bad5f393176c32c87af7c748178644c3e20'
+            'script_injection.js': 'edbb399f2771fdc4d03333480c0e84619b186ae7bf1d2a7a46a445054a06765c'
         };
 
         const modules = [
@@ -442,15 +445,15 @@ window.UNIFED_ArchitectureReport = {
     // sincronizados com MODULE_INTEGRITY (linha ~27) na geração deste relatório.
     // F12-D12: sincronizado com estado v1.0-COMMERCIAL-LITIGATION-P3.2+F14 (2026-06-22)
     const expectedHashes = {
-        // F17: hash actualizado de f16912e6… (UNIF-L4, desactualizado) para 667c86f2… (UNIF-L5, real) — Achado B3-01/P1
-        'script.js': '667c86f2acf9267de013e0fe9d76b0cf5c0834f6d4eb92a58ea2df6ade5b93b7',
+        // F18: hash final de script.js (pós eval()-removal F17 + D-LANG-02 F18) — Achado A5
+        'script.js': '2bab4f9a5b7d88103aa6f281ce67fa88d5dc4706abfa3b936653b2360aeecf28',
         'unifed_triada_export.js': 'c173d05c8c14e3ce38987920fedecf75fba4f5b78bb4217ce2f545490ad6074b',
         'unifed_questionnaire_50questions.js': 'fb85ac006cddfeb695fabe9cea90baeed27eb4941473a588adad9b5ef22973f1',
         'unifed_merkle_engine.js': 'af6b7a4d2cb9e55818454d7292a9abc91f36a743473f439c7f54a09737956ff5',
         'enrichment.js': '1d6b9fd8ead518398d2c289f56ece1449a1118f72c92c94714dc3ec1e695f33b',
         'nexus.js': '68e41429abdeae7f87081b1851f66ab0dc8833510de179e56b79a4fdf6a6e45e',
         'translations.js': '249fe01ae7fa041b5567a6d508290211f275828c6791f01ec5769e9c09ee3ce1',
-        'script_injection.js': 'fda58b5ca22d0427d0ce8e4fade96bad5f393176c32c87af7c748178644c3e20'
+        'script_injection.js': 'edbb399f2771fdc4d03333480c0e84619b186ae7bf1d2a7a46a445054a06765c'
     };
 
     async function sha256Hash(text) {

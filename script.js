@@ -5562,7 +5562,12 @@ function activateDemoMode() {
     const demoBtn = document.getElementById('demoModeBtn');
     if (demoBtn) {
         demoBtn.disabled = true;
-        demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CARREGANDO...';
+        // F18 (Achado D-LANG-02): substituída string PT hardcoded por verificação de
+        // window.currentLang, consistente com o padrão já usado em todo o ficheiro
+        // (ex.: aplicarTraducaoDinamicaUI). Sem isto, a UI mostrava "CARREGANDO..." em
+        // sessões EN.
+        const _loadingTxt = (window.currentLang === 'en') ? 'LOADING...' : 'CARREGANDO...';
+        demoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + _loadingTxt;
     }
 
     logAudit('🚀 ATIVANDO CASO REAL (ANONIMIZADO) v1.0-COMMERCIAL-LITIGATION · SUJEITO PASSIVO ALFA · 2024 · 2.º SEM...', 'info');
